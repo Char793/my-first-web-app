@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interactive Demo — Run code / tools in the browser</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#7dd3fc}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;color:#e6eef6;background:linear-gradient(180deg,#071024 0%, #081426 100%);}
+    .wrap{max-width:980px;margin:36px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px}
+    h1{margin:0;font-size:20px}
+    p.lead{color:var(--muted);margin:6px 0 18px}
+
+    .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:16px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+    textarea,input,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-family:monospace;font-size:13px}
+    textarea{min-height:160px;resize:vertical}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),#60a5fa);color:#012;cursor:pointer;font-weight:600}
+    .btn:active{transform:translateY(1px)}
+    .muted{color:var(--muted);font-size:13px}
+    .output{white-space:pre-wrap;font-family:monospace;background:rgba(0,0,0,0.25);padding:12px;border-radius:8px;min-height:120px}
+    .example-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .chip{padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:999px;border:1px solid rgba(255,255,255,0.04);cursor:pointer}
+    footer{margin-top:14px;color:var(--muted);font-size:13px}
+
+    @media(max-width:900px){.grid{grid-template-columns:1fr;}.wrap{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#60a5fa);display:flex;align-items:center;justify-content:center;color:#022">⌘</div>
+      <div>
+        <h1>Interactive Demo — Showcase & run your code</h1>
+        <p class="lead">A single-file starter page for demonstrating small tools. Includes a browser demo (runs locally) and a placeholder to call your server-side code.</p>
+      </div>
+    </header>
+
+    <main style="margin-top:18px">
+      <div class="grid">
+        <section class="card">
+          <label for="mode">Mode</label>
+          <select id="mode" aria-label="Choose run mode">
+            <option value="client">Client-side demo (no server required)</option>
+            <option value="server">Server-side (call your API)</option>
+          </select>
+
+          <div style="margin-top:12px">
+            <label for="input">Input (example: DNA sequence, code, or text)</label>
+            <textarea id="input" placeholder="Enter DNA sequence or text here...">ATGCGTACGTTAGC</textarea>
+            <div class="example-list">
+              <button class="chip" data-example="ATGCGTACGTTAGC">Sample DNA</button>
+              <button class="chip" data-example="AGCTTTTCATTCTGACTGCAACGGGCAATATGTCTCTGTGTGGATTAAAAAAAGAGTGTCTGATAGCAGC">Longer DNA</button>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+            <button id="runBtn" class="btn">Run</button>
+            <button id="clearBtn" class="btn" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04)">Clear output</button>
+          </div>
+
+          <div style="margin-top:12px">
+            <label for="options">Client demo option</label>
+            <select id="clientAction">
+              <option value="revcomp">DNA reverse complement + GC%</option>
+              <option value="count">Count characters / lines</option>
+            </select>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Server endpoint (if using server mode)</label>
+            <input id="serverUrl" placeholder="https://example.com/api/run" value="/api/run" />
+            <p class="muted">The page will POST JSON { input: string } to this URL and expects JSON { ok: true, result: string }.</p>
+          </div>
+        </section>
+
+        <aside class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <strong>Output</strong>
+              <div class="muted" id="status">Ready</div>
+            </div>
+            <div style="text-align:right">
+              <button id="copyBtn" class="btn" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04)">Copy</button>
+            </div>
+          </div>
+
+          <div style="margin-top:10px" id="output" class="output">No results yet.</div>
+
+          <div style="margin-top:12px">
+            <details>
+              <summary style="cursor:pointer">How to integrate your server</summary>
+              <div class="muted" style="margin-top:8px">
+                When mode is <strong>server</strong>, the page will POST JSON: <code>{"input":"..."}</code> to the endpoint you provided. Your server should:
+                <ol>
+                  <li>Accept POST JSON and validate input.</li>
+                  <li>Run your code safely (sandbox, time limits).</li>
+                  <li>Return JSON: <code>{"ok":true,"result":"..."}</code>. On error: <code>{"ok":false,"error":"message"}</code>.</li>
+                </ol>
+                See the comments in the JS for a minimal fetch example.
+              </div>
+            </details>
+          </div>
+
+          <footer>
+            <div class="muted">Security tip: do not execute untrusted code directly on the server without sandboxing. For user-submitted code, consider containerization or a job queue.</div>
+          </footer>
+        </aside>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    // --- Utility functions (client demo) ---
+    function sanitizeDNA(s){
+      return (s||"").toUpperCase().replace(/[^ACGTUNRYMKSWHBVD]/g,'');
+    }
+    function reverseComplement(seq){
+      // Accepts A C G T U and N
+      const map = {A:'T',C:'G',G:'C',T:'A',U:'A',N:'N'};
+      const s = seq.split('').map(c=>map[c]||'').reverse().join('');
+      return s;
+    }
+    function gcPercent(seq){
+      const s=seq.replace(/[^ACGTU]/g,'');
+      if(!s.length) return 0;
+      const g = (s.match(/G/g)||[]).length;
+      const c = (s.match(/C/g)||[]).length;
+      return Math.round((g+c)/s.length*10000)/100;
+    }
+
+    // --- DOM ---
+    const inputEl = document.getElementById('input');
+    const runBtn = document.getElementById('runBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const outputEl = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+    const modeEl = document.getElementById('mode');
+    const clientActionEl = document.getElementById('clientAction');
+    const serverUrlEl = document.getElementById('serverUrl');
+    const copyBtn = document.getElementById('copyBtn');
+    const chips = document.querySelectorAll('.chip');
+
+    chips.forEach(c=>c.addEventListener('click',()=>{inputEl.value=c.dataset.example;}));
+
+    clearBtn.addEventListener('click', ()=>{
+      outputEl.textContent = '';
+      statusEl.textContent = 'Cleared';
+    });
+
+    copyBtn.addEventListener('click', async ()=>{
+      try{
+        await navigator.clipboard.writeText(outputEl.textContent || '');
+        statusEl.textContent = 'Copied to clipboard';
+      }catch(e){
+        statusEl.textContent = 'Copy failed';
+      }
+    });
+
+    runBtn.addEventListener('click', async ()=>{
+      const mode = modeEl.value;
+      const raw = inputEl.value || '';
+      outputEl.textContent = '';
+
+      if(mode === 'client'){
+        statusEl.textContent = 'Running (client)...';
+        // Client demo options
+        const action = clientActionEl.value;
+        if(action === 'revcomp'){
+          const s = sanitizeDNA(raw);
+          if(!s){ outputEl.textContent = 'No valid DNA letters found (ACGTU).'; statusEl.textContent = 'Done'; return; }
+          const rc = reverseComplement(s);
+          const gc = gcPercent(s);
+          outputEl.textContent = `Input (sanitized): ${s}\nReverse complement: ${rc}\nLength: ${s.length}\nGC%: ${gc}%`;
+          statusEl.textContent = 'Done (client)';
+          return;
+        }
+        if(action === 'count'){
+          const chars = raw.length;
+          const lines = raw.split(/\r?\n/).length;
+          outputEl.textContent = `Characters: ${chars}\nLines: ${lines}`;
+          statusEl.textContent = 'Done (client)';
+          return;
+        }
+      }
+
+      if(mode === 'server'){
+        const url = serverUrlEl.value.trim();
+        if(!url){ statusEl.textContent = 'Please provide server URL'; return; }
+        statusEl.textContent = 'Sending to server...';
+        try{
+          const resp = await fetch(url,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({input:raw})
+          });
+          const data = await resp.json();
+          if(data && data.ok){
+            outputEl.textContent = data.result;
+            statusEl.textContent = 'Done (server)';
+          } else {
+            outputEl.textContent = data && data.error ? ('Server error: '+data.error) : ('Unexpected server response: '+JSON.stringify(data));
+            statusEl.textContent = 'Error';
+          }
+        }catch(err){
+          outputEl.textContent = 'Fetch failed: ' + (err && err.message ? err.message : String(err));
+          statusEl.textContent = 'Network error';
+        }
+      }
+
+    });
+
+    // Keyboard shortcut: Ctrl/Cmd+Enter runs
+    window.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key === 'Enter'){
+        runBtn.click();
+      }
+    });
+
+    // Small helper: prefill helpful server response (for testing)
+    // If you want to test server-mode quickly without a backend, you can run a tiny local server
+    // that echoes back: { ok: true, result: "..." }
+
+  </script>
+</body>
+</html>
